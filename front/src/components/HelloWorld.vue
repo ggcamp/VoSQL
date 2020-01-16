@@ -1,7 +1,7 @@
 <template>
   <div class="asr">
     <b-jumbotron>
-      <h1>VoSQL: Easy to Use Database Query Engine 🤔 🎤 😄</h1>
+      <h1>VoSQL: A Database Query Tool via Voice 🤔 🎤 😄</h1>
       <b-modal id="help" title="Manual" size="lg" ok-only>
         <h3>
           What's this?
@@ -11,7 +11,7 @@
           We built a simple question answering system based on cutting-edge Text2SQL technique.
         </p>
         <p>
-          For more details, please check out <a target=”_blank” href="https://example.com">our poster</a>.
+          For more details, please check out <a target=”_blank” href="https://drive.google.com/file/d/18hJWv26f3RktxYWNOuT1r3o7H4Ak9b8N">our poster</a>.
         </p>
         <h3>
           How to ask questions?
