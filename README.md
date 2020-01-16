@@ -1,6 +1,6 @@
 # VoSQL
 VoSQL: An Easy to Use Database Query Engine
 
-# Components
+## Components
 
 - Front-end and UI: `/front`
