@@ -21,6 +21,7 @@ from src.models import nn_utils
 from src.models.basic_model import BasicModel
 from src.models.pointer_net import PointerNet
 from src.rule import semQL as define_rule
+from src.models.premodel import PreModel
 
 
 class IRNet(BasicModel):
@@ -31,6 +32,8 @@ class IRNet(BasicModel):
         self.grammar = grammar
         self.use_column_pointer = args.column_pointer
         self.use_sentence_features = args.sentence_features
+        self.premodel = PreModel()
+        self.premodel.load_state_dict(torch.load("save/best_model.pt"))
 
         if args.cuda:
             self.new_long_tensor = torch.cuda.LongTensor
@@ -39,6 +42,8 @@ class IRNet(BasicModel):
             self.new_long_tensor = torch.LongTensor
             self.new_tensor = torch.FloatTensor
 
+        self.one_hot_type_embed = nn.Linear(7, args.embed_size)
+            
         self.encoder_lstm = nn.LSTM(args.embed_size, args.hidden_size // 2, bidirectional=True,
                                     batch_first=True)
 
@@ -96,6 +101,8 @@ class IRNet(BasicModel):
 
         self.table_pointer_net = PointerNet(args.hidden_size, args.col_embed_size, attention_type=args.column_att)
 
+        self.enc_com = nn.Linear(300 + 300, 300)
+        
         # initial the embedding layers
         nn.init.xavier_normal_(self.production_embed.weight.data)
         nn.init.xavier_normal_(self.type_embed.weight.data)
@@ -110,9 +117,18 @@ class IRNet(BasicModel):
         table_appear_mask = batch.table_appear_mask
 
 
-        src_encodings, (last_state, last_cell) = self.encode(batch.src_sents, batch.src_sents_len, None)
+        src_encodings, (last_state, last_cell) = self.encode(batch.src_sents, batch.src_sents_len, batch.src_type, None)
 
         src_encodings = self.dropout(src_encodings)
+        
+        premodel_encodings = torch.unsqueeze(self.premodel(batch), 1)
+        
+        # print(src_encodings.shape)
+        # print(premodel_encodings.shape)
+    
+        cat_encodings = torch.cat([src_encodings, premodel_encodings.repeat(1, src_encodings.shape[1], 1)], -1)
+        
+        src_encodings = torch.relu(self.enc_com(cat_encodings)) 
 
         utterance_encodings_sketch_linear = self.att_sketch_linear(src_encodings)
         utterance_encodings_lf_linear = self.att_lf_linear(src_encodings)
@@ -198,7 +214,7 @@ class IRNet(BasicModel):
             [torch.stack(action_probs_i, dim=0).log().sum() for action_probs_i in action_probs], dim=0)
 
         table_embedding = self.gen_x_batch(batch.table_sents)
-        src_embedding = self.gen_x_batch(batch.src_sents)
+        src_embedding = self.gen_x_batch_with_type(batch.src_sents, batch.src_type)
         schema_embedding = self.gen_x_batch(batch.table_names)
 
         # get emb differ
@@ -357,9 +373,15 @@ class IRNet(BasicModel):
         """
         batch = Batch([examples], self.grammar, cuda=self.args.cuda)
 
-        src_encodings, (last_state, last_cell) = self.encode(batch.src_sents, batch.src_sents_len, None)
+        src_encodings, (last_state, last_cell) = self.encode(batch.src_sents, batch.src_sents_len, batch.src_type, None)
         src_encodings = self.dropout(src_encodings)
 
+        premodel_encodings = torch.unsqueeze(self.premodel(batch), 1)
+        
+        cat_encodings = torch.cat([src_encodings, premodel_encodings.repeat(1, src_encodings.shape[1], 1)], -1)
+        
+        src_encodings = torch.relu(self.enc_com(cat_encodings)) 
+        
         utterance_encodings_sketch_linear = self.att_sketch_linear(src_encodings)
         utterance_encodings_lf_linear = self.att_lf_linear(src_encodings)
 

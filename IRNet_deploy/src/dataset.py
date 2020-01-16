@@ -23,7 +23,7 @@ class Example:
                  one_hot_type=None, col_hot_type=None, schema_len=None, tab_ids=None,
                  table_names=None, table_len=None, col_table_dict=None, cols=None,
                  table_col_name=None, table_col_len=None,
-                  col_pred=None, tokenized_src_sent=None,
+                  col_pred=None, tokenized_src_sent=None, question=None, dbid = None
         ):
 
         self.src_sent = src_sent
@@ -45,6 +45,8 @@ class Example:
         self.col_pred = col_pred
         self.tgt_actions = tgt_actions
         self.truth_actions = copy.deepcopy(tgt_actions)
+        self.question = question
+        self.dbid = dbid
 
         self.sketch = list()
         if self.truth_actions:
@@ -101,6 +103,8 @@ class Batch(object):
         self.table_col_name = [e.table_col_name for e in examples]
         self.table_col_len = [e.table_col_len for e in examples]
         self.col_pred = [e.col_pred for e in examples]
+        self.question = [e.question for e in examples]
+        self.dbid = [e.dbid for e in examples]
 
         self.grammar = grammar
         self.cuda = cuda

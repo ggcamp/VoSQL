@@ -24,6 +24,10 @@ from src.rule.semQL import Sup, Sel, Order, Root, Filter, A, N, C, T, Root1
 
 wordnet_lemmatizer = WordNetLemmatizer()
 
+def align(x, size):
+    if len(x) < size:
+        return x + [0] * (size - len(x))
+    return x[:size - 1] + [102]
 
 def load_word_emb(file_name, use_small=False):
     print ('Loading word embedding from %s'%file_name)
@@ -75,15 +79,16 @@ def schema_linking(question_arg, question_arg_type, one_hot_type, col_set_type, 
     for count_q, t_q in enumerate(question_arg_type):
         t = t_q[0]
         if t == 'NONE':
-            continue
+            # continue
+            one_hot_type[count_q][6] = 1 # idx = 6 for None type
         elif t == 'table':
             one_hot_type[count_q][0] = 1
-            question_arg[count_q] = ['table'] + question_arg[count_q]
+            # question_arg[count_q] = ['table'] + question_arg[count_q]
         elif t == 'col':
             one_hot_type[count_q][1] = 1
             try:
                 col_set_type[col_set_iter.index(question_arg[count_q])][1] = 5
-                question_arg[count_q] = ['column'] + question_arg[count_q]
+                # question_arg[count_q] = ['column'] + question_arg[count_q]
             except:
                 print(col_set_iter, question_arg[count_q])
                 raise RuntimeError("not in col set")
@@ -95,7 +100,7 @@ def schema_linking(question_arg, question_arg_type, one_hot_type, col_set_type, 
             one_hot_type[count_q][4] = 1
         elif t == 'value':
             one_hot_type[count_q][5] = 1
-            question_arg[count_q] = ['value'] + question_arg[count_q]
+            # question_arg[count_q] = ['value'] + question_arg[count_q]
         else:
             if len(t_q) == 1:
                 for col_probase in t_q:
@@ -103,16 +108,17 @@ def schema_linking(question_arg, question_arg_type, one_hot_type, col_set_type, 
                         continue
                     try:
                         col_set_type[sql['col_set'].index(col_probase)][2] = 5
-                        question_arg[count_q] = ['value'] + question_arg[count_q]
+                        # question_arg[count_q] = ['value'] + question_arg[count_q]
                     except:
                         print(sql['col_set'], col_probase)
                         raise RuntimeError('not in col')
-                    one_hot_type[count_q][5] = 1
+                one_hot_type[count_q][5] = 1
             else:
                 for col_probase in t_q:
                     if col_probase == 'asd':
                         continue
                     col_set_type[sql['col_set'].index(col_probase)][3] += 1
+                one_hot_type[count_q][6] = 1
 
 def process(sql, table):
 
@@ -131,7 +137,7 @@ def process(sql, table):
     q_iter_small = [wordnet_lemmatizer.lemmatize(x).lower() for x in origin_sql]
     question_arg = copy.deepcopy(sql['question_arg'])
     question_arg_type = sql['question_arg_type']
-    one_hot_type = np.zeros((len(question_arg_type), 6))
+    one_hot_type = np.zeros((len(question_arg_type), 7))
 
     col_set_type = np.zeros((len(col_set_iter), 4))
 
@@ -145,6 +151,8 @@ def process(sql, table):
     process_dict['tab_ids'] = tab_ids
     process_dict['col_iter'] = col_iter
     process_dict['table_names'] = table_names
+    process_dict['question'] = sql['question']
+    process_dict['dbid'] = sql['db_id']
 
     return process_dict
 
@@ -216,7 +224,9 @@ def to_batch_seq(sql_data, table_data, idxes, st, ed,
             table_col_name=table_col_name,
             table_col_len=len(table_col_name),
             tokenized_src_sent=process_dict['col_set_type'],
-            tgt_actions=rule_label
+            tgt_actions=rule_label,
+            question=process_dict['question'],
+            dbid = process_dict['dbid']
         )
         example.sql_json = copy.deepcopy(sql)
         examples.append(example)
