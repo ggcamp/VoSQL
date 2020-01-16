@@ -1,0 +1,55 @@
+[{
+  "db_id": "concert_singer",
+  "query": "SELECT 1",
+  "query_toks": [
+    "SELECT",
+    "1"
+  ],
+  "query_toks_no_value": [
+    "select",
+    "1"
+  ],
+  "question": "How many singers?",
+  "question_toks": [
+    "How",
+    "many",
+    "singers",
+    "?"
+  ],
+  "sql": {
+    "except": null,
+    "from": {
+      "conds": [],
+      "table_units": [
+        [
+          "table_unit",
+          1
+        ]
+      ]
+    },
+    "groupBy": [],
+    "having": [],
+    "intersect": null,
+    "limit": null,
+    "orderBy": [],
+    "select": [
+      false,
+      [
+        [
+          3,
+          [
+            0,
+            [
+              0,
+              0,
+              false
+            ],
+            null
+          ]
+        ]
+      ]
+    ],
+    "union": null,
+    "where": []
+  }
+}]
